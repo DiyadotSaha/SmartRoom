@@ -134,7 +134,7 @@ datafile_paths = [
 # add dir path to folder inside dataset 1 KEITH
 #dataset1_processing('/Users/diya/SmartRoom/dataset_1/archive/KETI')
 # add dir path to folder inside dataset 4 October
-#dataset4_processing('/Users/diya/SmartRoom/dataset_4/dxyvxk6h96-2/dxyvxk6h96-2/October')
+dataset4_processing('/Users/diya/SmartRoom/dataset_4/dxyvxk6h96-2/dxyvxk6h96-2/October')
 # add dir path to folder inside dataset 4 October
 dataset4_processing('/Users/diya/SmartRoom/dataset_4/dxyvxk6h96-2/dxyvxk6h96-2/November')
 
