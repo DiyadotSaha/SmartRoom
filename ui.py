@@ -26,12 +26,12 @@ with header_col2:
     st.markdown("<div style='text-align: right;'>Demo Mode</div>", unsafe_allow_html=True)
     st.radio("", ["Reactive", "Predictive"], horizontal=True)
 
-# --- Layout: Temperature & Energy Side-by-Side ---
+# --- Room Temperature and Energy Overview ---
+st.markdown("### Room Temperature")
 left_col, right_col = st.columns(2)
 
 # --- Temperature Overview ---
 with left_col:
-    st.markdown("### Room Temperature Overview")
     st.selectbox("", ["Room 1", "Room 2", "Room 3"], index=0)
 
     time = pd.date_range(end=pd.Timestamp.now(), periods=30, freq='min')
@@ -68,15 +68,3 @@ with right_col:
     e_col1, e_col2 = st.columns(2)
     e_col1.metric("Total Energy Used", "5,2 kWh")
     e_col2.metric("Average Power", "1,8 kW")
-
-# --- Control Actions Table ---
-st.markdown("### Control Actions")
-actions = pd.DataFrame({
-    "Timestamp": ["09:30:00", "09:25:00"],
-    "Room ID": ["1", "5"],
-    "Control Action Issued": [
-        "Cool Room 1 to 22°C\nPredicted Temp > 23°C",
-        "Heat Room 5 to 21°C\nPredicted Temp < 20°C"
-    ]
-})
-st.dataframe(actions, use_container_width=True, hide_index=True)
