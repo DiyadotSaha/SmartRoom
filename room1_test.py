@@ -37,6 +37,11 @@ energy_constants = {
     }
 }
 
+def publish_HVAC_command(HVAC_command): 
+    #SA
+    print("testing: ", HVAC_command)
+
+
 def apply_passive_drift(window, room_temp, drift_rate=0.1):
     if window.empty:
         return room_temp  # No change if no data
@@ -46,7 +51,6 @@ def apply_passive_drift(window, room_temp, drift_rate=0.1):
     humidity_factor = max(0.1, humidity_factor)
     temp_diff = ambient_temp - room_temp
     drift_strength = min(drift_rate * humidity_factor, abs(temp_diff))
-    print(f"→ Drift | Ambient: {ambient_temp:.2f}, Humidity: {avg_humidity:.2f}, ΔT: {temp_diff:.3f}, Drift Applied: {drift_strength:.3f}")
     return room_temp + drift_strength if temp_diff > 0 else room_temp - drift_strength
 
 
@@ -270,7 +274,7 @@ def linear_reg(df, duration_minutes, output_csv):
  
             room_temp = temp_result
             total_energy_kwh += best_energy
-
+            publish_HVAC_command(command)
             output_rows.append({
                 "time": pd.to_datetime(current_time, unit='ms'),
                 "command": command,
