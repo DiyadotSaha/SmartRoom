@@ -9,8 +9,10 @@ from publisher import publish_HVAC_command
 
 # File paths
 room_profile = "Room1"
-room_data = '/Users/asad/SmartRoom/room1.csv'
-room_output = '/Users/asad/SmartRoom/room_output'
+
+# room_data = '/Users/asad/SmartRoom/room1.csv'
+# room_output = '/Users/asad/SmartRoom/room_output'
+
 os.makedirs(room_output, exist_ok=True)
 # Memory of past N steps
 history_window = 12  # last 6 readings (30 seconds if step_interval is 5s)
@@ -272,7 +274,9 @@ def linear_reg(df, duration_minutes, output_csv):
  
             room_temp = temp_result
             total_energy_kwh += best_energy
-            publish_HVAC_command(command=command, topic='test-topic')
+
+            publish_HVAC_command(command=command.encode('utf-8'), topic='test-topic')
+
             output_rows.append({
                 "time": pd.to_datetime(current_time, unit='ms'),
                 "command": command,
