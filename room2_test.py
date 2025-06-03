@@ -7,9 +7,10 @@ from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import GradientBoostingRegressor
 from publisher import publish_HVAC_command
 
-topic_name = "room_1"
-# room_data = '/Users/asad/SmartRoom/room1.csv'
-# room_output = '/Users/asad/SmartRoom/room_output'
+topic_name = "room_2"
+
+# room_data = '/Users/diya/SmartRoom/room_data/Room2.csv'
+# room_output = '/Users/asad/SmartRoom/room2_output'
 
 os.makedirs(room_output, exist_ok=True)
 # Memory of past N steps
