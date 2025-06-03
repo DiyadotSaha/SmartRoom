@@ -5,25 +5,25 @@ import pandas as pd
 import numpy as np
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import GradientBoostingRegressor
-from publisher import publish_HVAC_command
+#from publisher import publish_HVAC_command
 
-topic_name = "room_2"
 
-# room_data = '/Users/diya/SmartRoom/room_data/Room2.csv'
-# room_output = '/Users/asad/SmartRoom/room2_output'
-
+#File name 
+room_data = '/Users/diya/SmartRoom/room_data/Room2.csv'
+room_output = '/Users/diya/SmartRoom/room2_output'
 os.makedirs(room_output, exist_ok=True)
-# Memory of past N steps
-history_window = 12  # last 6 readings (30 seconds if step_interval is 5s)
+
+#Constants
+topic_name = "room_2"
+history_window = 12  
 room_temp_history = []
 
 # Simulation parameters
-comfort_range = (20.0, 22.0)
-rolling_window_size = 5 * 60 * 1000  # 5 minutes in ms
-step_interval = 5  # seconds
+comfort_range = (25.0, 27.0)
+rolling_window_size = 5 * 60 * 1000 
+step_interval = 5
 cooling_rate = 0.2
 heating_rate = 0.1
-
 energy_constants = {
     "fixed": {
         "cooling_power_kw": 5.0,
@@ -39,12 +39,9 @@ energy_constants = {
     }
 }
 
-
-
-
 def apply_passive_drift(window, room_temp, drift_rate=0.1):
     if window.empty:
-        return room_temp  # No change if no data
+        return room_temp
     ambient_temp = window['temperature'].rolling(window=3, min_periods=1).mean().iloc[-1]
     avg_humidity = window['relative_humidity'].mean()
     humidity_factor = 1 - (avg_humidity / 100) * 0.4
@@ -56,7 +53,6 @@ def apply_passive_drift(window, room_temp, drift_rate=0.1):
 
 def decision_cost(discomfort: float, energy: float, alpha: float = 1.0, beta: float = 10.0):
     return alpha * discomfort + beta * energy
-
 
 def calculate_energy_usage(hvac_command, room_temp, setpoint, duration_sec=5, method="fixed", constants=None):
     if constants is None:
@@ -80,8 +76,6 @@ def calculate_energy_usage(hvac_command, room_temp, setpoint, duration_sec=5, me
         return ((load * cap / 5) / cop + fan_power) * duration_hr if hvac_command != "off" else 0.0
     raise ValueError("Unknown energy method")
 
-
-
 def decide_command(room_temp, comfort_range):
     low, high = comfort_range
     if room_temp > high:
@@ -91,7 +85,7 @@ def decide_command(room_temp, comfort_range):
     return 'off', f"Room temp {room_temp:.2f} within comfort range"
 
 def brute_force(df, duration_minutes, output_csv):
-    print(f"🚀 Running brute force simulation for {duration_minutes} minutes...")
+    print(f"Running brute force simulation for {duration_minutes} minutes...")
     start_time = df['time'].min()
     end_time = min(df['time'].max(), start_time + duration_minutes * 60 * 1000)
     current_time = start_time
@@ -110,10 +104,9 @@ def brute_force(df, duration_minutes, output_csv):
                 sum(comfort_range) / 2,
                 step_interval,
                 "fixed",
-                energy_constants["fixed"]  # ✅ only pass sub-dict
+                energy_constants["fixed"]  
             )
             total_energy_kwh += energy_kwh
-
             if command == 'cooling':
                 room_temp -= cooling_rate
             elif command == 'heating':
@@ -132,7 +125,7 @@ def brute_force(df, duration_minutes, output_csv):
         current_time += step_interval * 1000
         time.sleep(step_interval)
     pd.DataFrame(output_rows).to_csv(output_csv, index=False)
-    print(f"✅ Brute force simulation complete. Output saved to {output_csv}")
+    print(f"Brute force simulation complete. Output saved to {output_csv}")
 
 
 def simulate_passive_temperature(df, duration_minutes, output_csv):
@@ -165,9 +158,8 @@ def simulate_passive_temperature(df, duration_minutes, output_csv):
         current_time += step_interval * 1000
         time.sleep(step_interval)
     print(f"[{pd.to_datetime(current_time, unit='ms')}] Room: {room_temp:.2f}")
-
     pd.DataFrame(output_rows).to_csv(output_csv, index=False)
-    print(f"✅ Passive simulation complete. Output saved to {output_csv}")
+    print(f"Passive simulation complete. Output saved to {output_csv}")
 
 
 def linear_reg(df, duration_minutes, output_csv):
@@ -209,72 +201,84 @@ def linear_reg(df, duration_minutes, output_csv):
                 predicted_temp = room_temp
             low, high = comfort_range
 
-            # Decision optimization
-            options = ['cooling', 'heating', 'off']
-            best_command = 'off'
-            min_cost = float('inf')
-            for cmd in options:
-                energy_kwh = calculate_energy_usage(
-                    hvac_command=cmd,
-                    room_temp=room_temp,
-                    setpoint=(low + high) / 2,
-                    duration_sec=step_interval,
-                    method=energy_method,
-                    constants=energy_cfg
-                )
-                # Simulate next room temperature
-                temp_after = room_temp
-                if cmd == 'cooling':
-                    temp_after -= cooling_rate
-                elif cmd == 'heating':
-                    temp_after += heating_rate
-                else:
-                    temp_after = apply_passive_drift(window, room_temp)
+            # Simulated hour logic
+            elapsed_minutes = (current_time - start_time) // (60 * 1000)
+            simulated_hour = int(elapsed_minutes % 24)
+            hvac_allowed = 9 <= simulated_hour < 17
 
-                # Compute discomfort
-                if temp_after > high:
-                    discomfort = temp_after - high
-                elif temp_after < low:
-                    discomfort = low - temp_after
-                else:
-                    discomfort = 0.0
+            if hvac_allowed:
+                options = ['cooling', 'heating', 'off']
+                best_command = 'off'
+                min_cost = float('inf')
+                for cmd in options:
+                    energy_kwh = calculate_energy_usage(
+                        hvac_command=cmd,
+                        room_temp=room_temp,
+                        setpoint=(low + high) / 2,
+                        duration_sec=step_interval,
+                        method=energy_method,
+                        constants=energy_cfg
+                    )
+                    temp_after = room_temp
+                    if cmd == 'cooling':
+                        temp_after -= cooling_rate
+                    elif cmd == 'heating':
+                        temp_after += heating_rate
+                    else:
+                        temp_after = apply_passive_drift(window, room_temp)
 
-                cost = decision_cost(discomfort, energy_kwh, alpha=1.0, beta=10.0)
-                if cost < min_cost:
-                    min_cost = cost
-                    best_command = cmd
-                    best_energy = energy_kwh
-                    best_discomfort = discomfort
-                    temp_result = temp_after
+                    if temp_after > high:
+                        discomfort = temp_after - high
+                    elif temp_after < low:
+                        discomfort = low - temp_after
+                    else:
+                        discomfort = 0.0
 
-            # Apply cooldown
-            if (current_time - last_command_time) < cooldown_period_ms:
-                command = last_command
-                reason = f"Cooldown active: holding previous command {last_command}"
-                best_energy = calculate_energy_usage(
-                    hvac_command=command,
-                    room_temp=room_temp,
-                    setpoint=(low + high) / 2,
-                    duration_sec=step_interval,
-                    method=energy_method,
-                    constants=energy_cfg
-                )
-                if command == 'cooling':
-                    temp_result = room_temp - cooling_rate
-                elif command == 'heating':
-                    temp_result = room_temp + heating_rate
+                    cost = decision_cost(discomfort, energy_kwh)
+                    if cost < min_cost:
+                        min_cost = cost
+                        best_command = cmd
+                        best_energy = energy_kwh
+                        best_discomfort = discomfort
+                        temp_result = temp_after
+
+                if (current_time - last_command_time) < cooldown_period_ms:
+                    command = last_command
+                    reason = f"Cooldown active: holding previous command {last_command}"
+                    best_energy = calculate_energy_usage(
+                        hvac_command=command,
+                        room_temp=room_temp,
+                        setpoint=(low + high) / 2,
+                        duration_sec=step_interval,
+                        method=energy_method,
+                        constants=energy_cfg
+                    )
+                    if command == 'cooling':
+                        temp_result = room_temp - cooling_rate
+                    elif command == 'heating':
+                        temp_result = room_temp + heating_rate
+                    else:
+                        temp_result = apply_passive_drift(window, room_temp)
                 else:
-                    temp_result = apply_passive_drift(window, room_temp)
+                    command = best_command
+                    reason = f"Selected {best_command} with cost {min_cost:.4f} (Discomfort={best_discomfort:.2f}, Energy={best_energy:.4f})"
+                    last_command = command
+                    last_command_time = current_time
             else:
-                command = best_command
-                reason = f"Selected {best_command} with cost {min_cost:.4f} (Discomfort={best_discomfort:.2f}, Energy={best_energy:.4f})"
-                last_command = command
-                last_command_time = current_time
- 
+                command = 'off'
+                best_energy = 0.0
+                temp_result = apply_passive_drift(window, room_temp)
+                if temp_result > high:
+                    best_discomfort = temp_result - high
+                elif temp_result < low:
+                    best_discomfort = low - temp_result
+                else:
+                    best_discomfort = 0.0
+                min_cost = decision_cost(best_discomfort, best_energy)
+                reason = f"HVAC off during off-hours (Simulated hour: {simulated_hour})"
+
             room_temp = temp_result
             total_energy_kwh += best_energy
-
-            publish_HVAC_command(command=command.encode('utf-8'), topic=topic_name)
 
             output_rows.append({
                 "time": pd.to_datetime(current_time, unit='ms'),
@@ -289,14 +293,15 @@ def linear_reg(df, duration_minutes, output_csv):
                 "discomfort": round(best_discomfort, 2),
                 "cost": round(min_cost, 4)
             })
-
         else:
             print(f"{pd.to_datetime(current_time, unit='ms')} | No ambient data in window")
 
         current_time += step_interval * 1000
         time.sleep(step_interval)
+
     pd.DataFrame(output_rows).to_csv(output_csv, index=False)
-    print(f"✅ Smart simulation complete. Output saved to {output_csv}")
+    print(f"Smart simulation complete. Output saved to {output_csv}")
+
 
 
 def main():

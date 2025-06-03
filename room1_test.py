@@ -5,11 +5,11 @@ import pandas as pd
 import numpy as np
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import GradientBoostingRegressor
-from publisher import publish_HVAC_command
+#from publisher import publish_HVAC_command
 
 topic_name = "room_1"
-# room_data = '/Users/asad/SmartRoom/room1.csv'
-# room_output = '/Users/asad/SmartRoom/room_output'
+room_data = '/Users/diya/SmartRoom/room_data/Room1.csv'
+room_output = '/Users/diya/SmartRoom/room1_output'
 
 os.makedirs(room_output, exist_ok=True)
 # Memory of past N steps
@@ -109,7 +109,7 @@ def brute_force(df, duration_minutes, output_csv):
                 sum(comfort_range) / 2,
                 step_interval,
                 "fixed",
-                energy_constants["fixed"]  # ✅ only pass sub-dict
+                energy_constants["fixed"]  
             )
             total_energy_kwh += energy_kwh
 
@@ -131,7 +131,7 @@ def brute_force(df, duration_minutes, output_csv):
         current_time += step_interval * 1000
         time.sleep(step_interval)
     pd.DataFrame(output_rows).to_csv(output_csv, index=False)
-    print(f"✅ Brute force simulation complete. Output saved to {output_csv}")
+    print(f"Brute force simulation complete. Output saved to {output_csv}")
 
 
 def simulate_passive_temperature(df, duration_minutes, output_csv):
@@ -166,7 +166,7 @@ def simulate_passive_temperature(df, duration_minutes, output_csv):
     print(f"[{pd.to_datetime(current_time, unit='ms')}] Room: {room_temp:.2f}")
 
     pd.DataFrame(output_rows).to_csv(output_csv, index=False)
-    print(f"✅ Passive simulation complete. Output saved to {output_csv}")
+    print(f"Passive simulation complete. Output saved to {output_csv}")
 
 
 def linear_reg(df, duration_minutes, output_csv):
@@ -273,7 +273,7 @@ def linear_reg(df, duration_minutes, output_csv):
             room_temp = temp_result
             total_energy_kwh += best_energy
 
-            publish_HVAC_command(command=command.encode('utf-8'), topic=topic_name)
+            #publish_HVAC_command(command=command.encode('utf-8'), topic=topic_name)
 
             output_rows.append({
                 "time": pd.to_datetime(current_time, unit='ms'),
@@ -295,7 +295,7 @@ def linear_reg(df, duration_minutes, output_csv):
         current_time += step_interval * 1000
         time.sleep(step_interval)
     pd.DataFrame(output_rows).to_csv(output_csv, index=False)
-    print(f"✅ Smart simulation complete. Output saved to {output_csv}")
+    print(f"Smart simulation complete. Output saved to {output_csv}")
 
 
 def main():
