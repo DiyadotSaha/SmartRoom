@@ -1,7 +1,6 @@
 # published messages to a topic 
 import pandas as pd
 
-from room1_test import linear_reg
 from kafka import KafkaProducer
 
 def publish_HVAC_command(command, topic): 

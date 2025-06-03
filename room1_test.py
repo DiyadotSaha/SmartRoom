@@ -7,11 +7,10 @@ from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import GradientBoostingRegressor
 from publisher import publish_HVAC_command
 
-print(HIIIIII NEW VERSION )
 # File paths
 room_profile = "Room1"
-room_data = '/Users/diya/SmartRoom/room_data/Room1.csv'
-room_output = '/Users/diya/SmartRoom/room1_output'
+room_data = '/Users/asad/SmartRoom/room1.csv'
+room_output = '/Users/asad/SmartRoom/room_output'
 os.makedirs(room_output, exist_ok=True)
 # Memory of past N steps
 history_window = 12  # last 6 readings (30 seconds if step_interval is 5s)
@@ -310,10 +309,10 @@ def main():
         return
 
     mode = sys.argv[2].lower()
-    output_csv = os.path.join(room1_output, f"output_csv_{mode}.csv")
+    output_csv = os.path.join(room_output, f"output_csv_{mode}.csv")
 
     # Load data
-    df = pd.read_csv(room1_data)
+    df = pd.read_csv(room_data)
     df['time'] = pd.to_numeric(df['time'], errors='coerce')
     df = df.dropna(subset=['time']).sort_values(by='time').reset_index(drop=True)
 
