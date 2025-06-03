@@ -5,11 +5,11 @@ import pandas as pd
 import numpy as np
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import GradientBoostingRegressor
-from publisher import publish_HVAC_command
+from HVACPublisher import publish_HVAC_command
 
 topic_name = "room_1"
-# room_data = '/Users/asad/SmartRoom/room1.csv'
-# room_output = '/Users/asad/SmartRoom/room_output'
+room_data = '/Users/asad/SmartRoom/room1.csv'
+room_output = '/Users/asad/SmartRoom/room_output'
 
 os.makedirs(room_output, exist_ok=True)
 # Memory of past N steps
