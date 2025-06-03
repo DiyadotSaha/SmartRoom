@@ -9,7 +9,7 @@ from sklearn.ensemble import GradientBoostingRegressor
 
 # File paths
 room1_data = '/Users/diya/SmartRoom/room_data/Room1.csv'
-room1_output = '/Users/diya/SmartRoom/room1_output_logs'
+room1_output = '/Users/diya/SmartRoom/room3_output_logs'
 os.makedirs(room1_output, exist_ok=True)
 # Memory of past N steps
 history_window = 12  # last 6 readings (30 seconds if step_interval is 5s)
@@ -132,9 +132,6 @@ def brute_force(df, duration_minutes, output_csv):
 
 
 def simulate_passive_temperature(df, duration_minutes, output_csv):
-    """
-    Simulates room temperature evolution with HVAC turned off, affected only by ambient conditions and humidity.
-    """
     print(f"🌿 Running passive simulation (no HVAC) for {duration_minutes} minutes...")
 
     start_time = df['time'].min()
@@ -270,7 +267,7 @@ def linear_reg(df, duration_minutes, output_csv):
                 reason = f"Selected {best_command} with cost {min_cost:.4f} (Discomfort={best_discomfort:.2f}, Energy={best_energy:.4f})"
                 last_command = command
                 last_command_time = current_time
-
+ 
             room_temp = temp_result
             total_energy_kwh += best_energy
 
