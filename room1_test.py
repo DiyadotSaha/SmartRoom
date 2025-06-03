@@ -5,12 +5,14 @@ import pandas as pd
 import numpy as np
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import GradientBoostingRegressor
+from publisher import publish_HVAC_command
 
 
 # File paths
-room1_data = '/Users/diya/SmartRoom/room_data/Room1.csv'
-room1_output = '/Users/diya/SmartRoom/room3_output_logs'
-os.makedirs(room1_output, exist_ok=True)
+room_profile = "Room1"
+room_data = '/Users/diya/SmartRoom/room_data/Room1.csv'
+room_output = '/Users/diya/SmartRoom/room1_output'
+os.makedirs(room_output, exist_ok=True)
 # Memory of past N steps
 history_window = 12  # last 6 readings (30 seconds if step_interval is 5s)
 room_temp_history = []
@@ -37,9 +39,7 @@ energy_constants = {
     }
 }
 
-def publish_HVAC_command(HVAC_command): 
-    #SA
-    print("testing: ", HVAC_command)
+
 
 
 def apply_passive_drift(window, room_temp, drift_rate=0.1):
@@ -136,8 +136,7 @@ def brute_force(df, duration_minutes, output_csv):
 
 
 def simulate_passive_temperature(df, duration_minutes, output_csv):
-    print(f"🌿 Running passive simulation (no HVAC) for {duration_minutes} minutes...")
-
+    print("")
     start_time = df['time'].min()
     end_time = min(df['time'].max(), start_time + duration_minutes * 60 * 1000)
     current_time = start_time
@@ -274,7 +273,7 @@ def linear_reg(df, duration_minutes, output_csv):
  
             room_temp = temp_result
             total_energy_kwh += best_energy
-            publish_HVAC_command(command)
+            publish_HVAC_command(command=command, topic='test-topic')
             output_rows.append({
                 "time": pd.to_datetime(current_time, unit='ms'),
                 "command": command,
@@ -296,167 +295,6 @@ def linear_reg(df, duration_minutes, output_csv):
         time.sleep(step_interval)
     pd.DataFrame(output_rows).to_csv(output_csv, index=False)
     print(f"✅ Smart simulation complete. Output saved to {output_csv}")
-
-
-def boosting(df, duration_minutes, output_csv):
-    print(f"🚀 Running improved boosting simulation for {duration_minutes} minutes...")
-
-    start_time = df['time'].min()
-    end_time = min(df['time'].max(), start_time + duration_minutes * 60 * 1000)
-    current_time = start_time
-    room_temp = df.iloc[0]['temperature']
-    total_energy_kwh = 0.0
-
-    energy_method = "fixed"
-    energy_cfg = energy_constants[energy_method]
-
-    room_temp_history = []
-    output_rows = []
-    cooldown_period_ms = 60 * 1000
-    last_command_time = start_time
-    last_command = 'off'
-
-    def decision_cost(discomfort: float, energy: float, alpha: float = 1.0, beta: float = 10.0):
-        return alpha * discomfort + beta * energy
-
-    while current_time <= end_time:
-        window = df[(df['time'] >= current_time - rolling_window_size) & (df['time'] <= current_time)]
-        if not window.empty:
-            ambient_temp = window['temperature'].mean()
-            avg_humidity = window['relative_humidity'].mean()
-
-            room_temp_history.append(room_temp)
-            if len(room_temp_history) > 50:
-                room_temp_history.pop(0)
-
-            smoothed_history = pd.Series(room_temp_history).rolling(window=3, min_periods=1).mean().tolist()
-
-            predicted_temp = room_temp  # default if no valid prediction
-
-            if len(room_temp_history) >= history_window + 1:
-                # Prepare training data
-                X = []
-                y = []
-                for i in range(len(smoothed_history) - history_window):
-                    hist = smoothed_history[i:i + history_window]
-                    extra_features = [avg_humidity, ambient_temp, i]
-                    X.append(hist + extra_features)
-                    y.append(smoothed_history[i + history_window] - smoothed_history[i + history_window - 1])
-                X = np.array(X)
-                y = np.array(y)
-
-                # Create prediction window
-                last_window = np.array(
-                    smoothed_history[-history_window:] + [avg_humidity, ambient_temp, len(room_temp_history)]
-                ).reshape(1, -1)
-
-                # Train only if valid
-                if (
-                    len(X) > 0 and len(y) > 0 and
-                    not np.isnan(X).any() and
-                    not np.isnan(y).any() and
-                    not np.all(y == y[0]) and
-                    not np.isnan(last_window).any()
-                ):
-                    model = GradientBoostingRegressor(
-                        n_estimators=200,
-                        learning_rate=0.05,
-                        max_depth=5,
-                        subsample=0.9,
-                        random_state=42
-                    )
-                    model.fit(X, y)
-                    predicted_delta = model.predict(last_window)[0]
-                    predicted_temp = room_temp + predicted_delta
-                else:
-                    print(f"🚫 Skipping model training at {pd.to_datetime(current_time, unit='ms')} — invalid data")
-
-            # HVAC Decision Logic
-            low, high = comfort_range
-            options = ['cooling', 'heating', 'off']
-            best_command = 'off'
-            min_cost = float('inf')
-
-            for cmd in options:
-                energy_kwh = calculate_energy_usage(
-                    hvac_command=cmd,
-                    room_temp=room_temp,
-                    setpoint=(low + high) / 2,
-                    duration_sec=step_interval,
-                    method=energy_method,
-                    constants=energy_cfg
-                )
-                temp_after = room_temp
-                if cmd == 'cooling':
-                    temp_after -= cooling_rate
-                elif cmd == 'heating':
-                    temp_after += heating_rate
-                else:
-                    temp_after = apply_passive_drift(window, room_temp)
-
-                if temp_after > high:
-                    discomfort = temp_after - high
-                elif temp_after < low:
-                    discomfort = low - temp_after
-                else:
-                    discomfort = 0.0
-
-                cost = decision_cost(discomfort, energy_kwh)
-                if cost < min_cost:
-                    min_cost = cost
-                    best_command = cmd
-                    best_energy = energy_kwh
-                    best_discomfort = discomfort
-                    temp_result = temp_after
-
-            # Enforce Cooldown
-            if (current_time - last_command_time) < cooldown_period_ms:
-                command = last_command
-                best_energy = calculate_energy_usage(
-                    hvac_command=command,
-                    room_temp=room_temp,
-                    setpoint=(low + high) / 2,
-                    duration_sec=step_interval,
-                    method=energy_method,
-                    constants=energy_cfg
-                )
-                if command == 'cooling':
-                    temp_result = room_temp - cooling_rate
-                elif command == 'heating':
-                    temp_result = room_temp + heating_rate
-                else:
-                    temp_result = apply_passive_drift(window, room_temp)
-                reason = f"Cooldown active: holding previous command {command}"
-            else:
-                command = best_command
-                last_command = command
-                last_command_time = current_time
-                reason = f"Selected {command} with cost {min_cost:.4f} (Discomfort={best_discomfort:.2f}, Energy={best_energy:.4f})"
-
-            room_temp = temp_result
-            total_energy_kwh += best_energy
-
-            output_rows.append({
-                "time": pd.to_datetime(current_time, unit='ms'),
-                "command": command,
-                "ambient_temp": round(ambient_temp, 2),
-                "room_temp": round(room_temp, 2),
-                "predicted_temp": round(predicted_temp, 2),
-                "humidity": round(avg_humidity, 2),
-                "energy": round(best_energy, 4),
-                "total_energy": round(total_energy_kwh, 2),
-                "reason": reason,
-                "discomfort": round(best_discomfort, 2),
-                "cost": round(min_cost, 4)
-            })
-
-        current_time += step_interval * 1000
-        time.sleep(step_interval)
-
-    pd.DataFrame(output_rows).to_csv(output_csv, index=False)
-    print(f"✅ Boosting simulation complete. Output saved to {output_csv}")
-
-
 
 
 def main():

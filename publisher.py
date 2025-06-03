@@ -4,10 +4,10 @@ import pandas as pd
 from room1_test import linear_reg
 from kafka import KafkaProducer
 
-def publish_HVAC_command(command, producer, topic): 
-    print("testing: ", command)
-    producer.send(topic, command)
-    print('Sent:' + command.decode('utf-8'))
+def publish_HVAC_command(command, topic): 
+    print("Got HVAC command: ", command, "from ", topic)
+    #producer.send(topic, command)
+    #print('Sent:' + command.decode('utf-8'))
 
 
 def main():
