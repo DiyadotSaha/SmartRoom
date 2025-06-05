@@ -26,14 +26,17 @@ with header_col2:
     st.markdown("<div style='text-align: right;'>Demo Mode</div>", unsafe_allow_html=True)
     st.radio("", ["Reactive", "Predictive"], horizontal=True)
 
-# --- Layout: Temperature & Energy Side-by-Side ---
+# --- Room Temperature and Energy Overview ---
+st.markdown("### Room Temperature")
 left_col, right_col = st.columns(2)
 
 # --- Temperature Overview ---
 with left_col:
-    st.markdown("### Room Temperature Overview")
-    st.selectbox("", ["Room 1", "Room 2", "Room 3"], index=0)
+    # ✅ Capture selected room properly
+    selected_room = st.selectbox("", ["Room 1", "Room 2", "Room 3"], index=0)
 
+    # ✅ Generate unique data per room using room number as seed
+    np.random.seed(int(selected_room[-1]))
     time = pd.date_range(end=pd.Timestamp.now(), periods=30, freq='min')
     temp_actual = 22 + np.sin(np.linspace(0, 3 * np.pi, 30)) * 0.5 + np.random.normal(0, 0.2, 30)
     temp_predicted = temp_actual + np.random.normal(0, 0.3, 30)
@@ -49,7 +52,7 @@ with left_col:
     st.pyplot(fig)
 
     stat_col1, stat_col2, stat_col3 = st.columns(3)
-    stat_col1.metric("Current Temperature", "22,3°C")
+    stat_col1.metric("Current Temperature", f"{temp_actual[-1]:.1f}°C")
     stat_col2.markdown("<b>Comfort Status</b><br><span style='color:green;'>✅ In Range</span>", unsafe_allow_html=True)
     stat_col3.markdown("<b>HVAC State</b><br>🔵 Cooling", unsafe_allow_html=True)
 
@@ -66,17 +69,5 @@ with right_col:
     st.pyplot(fig2)
 
     e_col1, e_col2 = st.columns(2)
-    e_col1.metric("Total Energy Used", "5,2 kWh")
+    e_col1.metric("Total Energy Used", f"{energy_data[-1]:.1f} kWh")
     e_col2.metric("Average Power", "1,8 kW")
-
-# --- Control Actions Table ---
-st.markdown("### Control Actions")
-actions = pd.DataFrame({
-    "Timestamp": ["09:30:00", "09:25:00"],
-    "Room ID": ["1", "5"],
-    "Control Action Issued": [
-        "Cool Room 1 to 22°C\nPredicted Temp > 23°C",
-        "Heat Room 5 to 21°C\nPredicted Temp < 20°C"
-    ]
-})
-st.dataframe(actions, use_container_width=True, hide_index=True)
