@@ -16,6 +16,7 @@ def main():
     )
 
     print("Kafka consumer subscribed topics:", consumer.topics())
+    
     print("Listening for messages...")
 
     for command in consumer:
