@@ -8,7 +8,7 @@ def main():
     print("Creating the subscriber...")
 
     consumer = KafkaConsumer(
-        'test-topic',
+        'room_1', 'room_2',
         bootstrap_servers='localhost:9092',
         auto_offset_reset='earliest',
         group_id='debug-group-1',
@@ -16,6 +16,7 @@ def main():
     )
 
     print("Kafka consumer subscribed topics:", consumer.topics())
+    
     print("Listening for messages...")
 
     for command in consumer:
@@ -32,7 +33,7 @@ def main():
         
         message = hvacCommand; 
         
-        print(f"Received: {command.value.decode()}")
+        print(f"Received from topic '{command.topic}': {command.value.decode()}")
 
 if __name__ == "__main__":
     main()

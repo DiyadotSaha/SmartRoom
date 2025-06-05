@@ -1,4 +1,4 @@
-# published messages to a topic 
+# publishes messages to a topic 
 import pandas as pd
 
 from kafka import KafkaProducer
