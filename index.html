@@ -1,0 +1,56 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html>
+<head>
+  <title>HVAC Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <h2>Real-Time HVAC Room 1</h2>
+  <canvas id="tempChart"></canvas>
+  <canvas id="energyChart"></canvas>
+
+  <script>
+    const ws = new WebSocket("ws://localhost:8000/ws");
+    const tempData = { labels: [], actual: [], predicted: [] };
+    const energyData = { labels: [], energy: [] };
+
+    const tempChart = new Chart(document.getElementById('tempChart'), {
+      type: 'line',
+      data: {
+        labels: tempData.labels,
+        datasets: [
+          { label: 'Actual Temp', data: tempData.actual, borderColor: 'black', fill: false },
+          { label: 'Predicted Temp', data: tempData.predicted, borderColor: 'gray', borderDash: [5, 5], fill: false }
+        ]
+      }
+    });
+
+    const energyChart = new Chart(document.getElementById('energyChart'), {
+      type: 'line',
+      data: {
+        labels: energyData.labels,
+        datasets: [
+          { label: 'Energy (kWh)', data: energyData.energy, borderColor: 'blue', fill: false }
+        ]
+      }
+    });
+
+    ws.onmessage = function(event) {
+      const data = JSON.parse(event.data);
+      const time = new Date(data.timestamp).toLocaleTimeString();
+
+      // Update temp chart
+      tempData.labels.push(time);
+      tempData.actual.push(data.actual_temp);
+      tempData.predicted.push(data.predicted_temp);
+      tempChart.update();
+
+      // Update energy chart
+      energyData.labels.push(time);
+      energyData.energy.push(data.energy);
+      energyChart.update();
+    };
+  </script>
+</body>
+</html>
