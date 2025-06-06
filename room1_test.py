@@ -6,12 +6,12 @@ import numpy as np
 import json
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import GradientBoostingRegressor
-from HVACPublisher import publish_HVAC_command
-from DataPublisher import publish_data_command
+#from HVACPublisher import publish_HVAC_command
+#from DataPublisher import publish_data_command
 
 topic_name = "room_1"
-room_data = '/Users/asad/SmartRoom/room1.csv'
-room_output = '/Users/asad/SmartRoom/room_output'
+room_data = '/Users/diya/SmartRoom/room_data/Room1.csv'
+room_output = '/Users/diya/SmartRoom/room1_output'
 
 os.makedirs(room_output, exist_ok=True)
 # Memory of past N steps
@@ -59,27 +59,60 @@ def decision_cost(discomfort: float, energy: float, alpha: float = 1.0, beta: fl
     return alpha * discomfort + beta * energy
 
 
-def calculate_energy_usage(hvac_command, room_temp, setpoint, duration_sec=5, method="fixed", constants=None):
+# def calculate_energy_usage(hvac_command, room_temp, setpoint, duration_sec=5, method="fixed", constants=None):
+#     if constants is None:
+#         constants = {}
+#     duration_hr = duration_sec / 3600
+#     if method == "fixed":
+#         if hvac_command == "cooling":
+#             return constants["cooling_power_kw"] * duration_hr
+#         elif hvac_command == "heating":
+#             return constants["heating_power_kw"] * duration_hr
+#         else:
+#             return 0.0
+#     elif method == "delta":
+#         diff = abs(room_temp - setpoint)
+#         return constants["K"] * diff * duration_hr if hvac_command != "off" else 0.0
+#     elif method == "cop":
+#         cop = constants.get("cop", 3.0)
+#         fan_power = constants.get("fan_power_kw", 1.0)
+#         cap = constants.get("cooling_capacity_kw", 10.0)
+#         load = max(room_temp - setpoint, 0) if hvac_command == "cooling" else max(setpoint - room_temp, 0)
+#         return ((load * cap / 5) / cop + fan_power) * duration_hr if hvac_command != "off" else 0.0
+#     raise ValueError("Unknown energy method")
+
+def calculate_energy_usage(hvac_command, prev_hvac_command,room_temp,setpoint,duration_sec=5,method="fixed",constants=None,startup_penalty_kw=2.0):
     if constants is None:
         constants = {}
     duration_hr = duration_sec / 3600
+    startup_energy = 0.0
+    if prev_hvac_command == "off" and hvac_command in ["cooling", "heating"]:
+        startup_energy = startup_penalty_kw * duration_hr
     if method == "fixed":
         if hvac_command == "cooling":
-            return constants["cooling_power_kw"] * duration_hr
+            base_energy = constants["cooling_power_kw"] * duration_hr
         elif hvac_command == "heating":
-            return constants["heating_power_kw"] * duration_hr
+            base_energy = constants["heating_power_kw"] * duration_hr
         else:
-            return 0.0
+            base_energy = 0.0
     elif method == "delta":
-        diff = abs(room_temp - setpoint)
-        return constants["K"] * diff * duration_hr if hvac_command != "off" else 0.0
+        if hvac_command != "off":
+            diff = abs(room_temp - setpoint)
+            base_energy = constants["K"] * diff * duration_hr
+        else:
+            base_energy = 0.0
     elif method == "cop":
-        cop = constants.get("cop", 3.0)
-        fan_power = constants.get("fan_power_kw", 1.0)
-        cap = constants.get("cooling_capacity_kw", 10.0)
-        load = max(room_temp - setpoint, 0) if hvac_command == "cooling" else max(setpoint - room_temp, 0)
-        return ((load * cap / 5) / cop + fan_power) * duration_hr if hvac_command != "off" else 0.0
-    raise ValueError("Unknown energy method")
+        if hvac_command != "off":
+            cop = constants.get("cop", 3.0)
+            fan_power = constants.get("fan_power_kw", 1.0)
+            cap = constants.get("cooling_capacity_kw", 10.0)
+            load = max(room_temp - setpoint, 0) if hvac_command == "cooling" else max(setpoint - room_temp, 0)
+            base_energy = ((load * cap / 5) / cop + fan_power) * duration_hr
+        else:
+            base_energy = 0.0
+    else:
+        raise ValueError("Unknown energy method")
+    return base_energy + startup_energy
 
 
 
@@ -92,13 +125,14 @@ def decide_command(room_temp, comfort_range):
     return 'off', f"Room temp {room_temp:.2f} within comfort range"
 
 def brute_force(df, duration_minutes, output_csv):
-    print(f"🚀 Running brute force simulation for {duration_minutes} minutes...")
+    print(f"Running brute force simulation for {duration_minutes} minutes...")
     start_time = df['time'].min()
     end_time = min(df['time'].max(), start_time + duration_minutes * 60 * 1000)
     current_time = start_time
     room_temp = df.iloc[0]['temperature']
     total_energy_kwh = 0.0
     output_rows = []
+    last_command = 'off'
     while current_time <= end_time:
         window = df[(df['time'] >= current_time - rolling_window_size) & (df['time'] <= current_time)]
         if not window.empty:
@@ -107,6 +141,7 @@ def brute_force(df, duration_minutes, output_csv):
             command, reason = decide_command(room_temp, comfort_range)
             energy_kwh = calculate_energy_usage(
                 command,
+                last_command,
                 room_temp,
                 sum(comfort_range) / 2,
                 step_interval,
@@ -130,10 +165,12 @@ def brute_force(df, duration_minutes, output_csv):
                 "energy": round(energy_kwh, 4),
                 "total_energy": round(total_energy_kwh, 2)
             })
+            #diya
+            last_command = command
         current_time += step_interval * 1000
         time.sleep(step_interval)
     pd.DataFrame(output_rows).to_csv(output_csv, index=False)
-    print(f"✅ Brute force simulation complete. Output saved to {output_csv}")
+    print(f"Brute force simulation complete. Output saved to {output_csv}")
 
 
 def simulate_passive_temperature(df, duration_minutes, output_csv):
@@ -172,7 +209,7 @@ def simulate_passive_temperature(df, duration_minutes, output_csv):
 
 
 def linear_reg(df, duration_minutes, output_csv):
-    print(f"Running smart simulation (linear regression + cost optimization) for {duration_minutes} minutes...")
+    print(f"Running smart simulation for {duration_minutes} minutes...")
     start_time = df['time'].min()
     end_time = min(df['time'].max(), start_time + duration_minutes * 60 * 1000)
     current_time = start_time
@@ -217,6 +254,8 @@ def linear_reg(df, duration_minutes, output_csv):
             for cmd in options:
                 energy_kwh = calculate_energy_usage(
                     hvac_command=cmd,
+                    #DIYA
+                    prev_hvac_command=last_command,
                     room_temp=room_temp,
                     setpoint=(low + high) / 2,
                     duration_sec=step_interval,
@@ -254,6 +293,8 @@ def linear_reg(df, duration_minutes, output_csv):
                 reason = f"Cooldown active: holding previous command {last_command}"
                 best_energy = calculate_energy_usage(
                     hvac_command=command,
+                    #DIYA
+                    prev_hvac_command=last_command,
                     room_temp=room_temp,
                     setpoint=(low + high) / 2,
                     duration_sec=step_interval,
@@ -276,7 +317,7 @@ def linear_reg(df, duration_minutes, output_csv):
             total_energy_kwh += best_energy
 
             data = [str(current_time), float(room_temp)]  # convert explicitly if needed
-            publish_data_command(command=json.dumps(data).encode('utf-8'), topic=topic_name)
+            #publish_data_command(command=json.dumps(data).encode('utf-8'), topic=topic_name)
             #publish_HVAC_command(command=command.encode('utf-8'), topic=topic_name)
            
             output_rows.append({
