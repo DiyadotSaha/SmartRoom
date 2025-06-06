@@ -30,7 +30,7 @@ def load_latest_data():
     and returns the most recent 30 rows of data.
     CSV columns expected: time, room_temp, energy, command
     """
-    df = pd.read_csv("output_csv_smart.csv")
+    df = pd.read_csv("/Users/asad/SmartRoom/room1_output_logs/output_csv_smart.csv")
     df["time"] = pd.to_datetime(df["time"])
     df = df.sort_values("time").tail(30)
     return df

@@ -5,12 +5,13 @@ import pandas as pd
 import numpy as np
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import GradientBoostingRegressor
-#from publisher import publish_HVAC_command
+from publisher import publish_HVAC_command
 
+topic_name = "room_2"
 
-#File name 
-room_data = '/Users/diya/SmartRoom/room_data/Room2.csv'
-room_output = '/Users/diya/SmartRoom/room2_output'
+# room_data = '/Users/diya/SmartRoom/room_data/Room2.csv'
+# room_output = '/Users/asad/SmartRoom/room2_output'
+
 os.makedirs(room_output, exist_ok=True)
 
 #Constants

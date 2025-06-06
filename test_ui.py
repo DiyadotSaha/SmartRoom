@@ -4,6 +4,7 @@ import pandas as pd
 import streamlit as st
 import plotly.graph_objects as go
 from datetime import datetime
+from DataSubscriber import getRoomData
 
 st.set_page_config(
     page_title="Real-Time HVAC Control Simulator",
@@ -20,23 +21,27 @@ if "temp_data" not in st.session_state:
     st.session_state.energy_data = pd.DataFrame(columns=["time", "energy"])
     st.session_state.counter = 0
 
-# Main simulation loop (1 iteration per rerun)
-now = datetime.now()
+
+DataArray = getRoomData()
+print(DataArray)
+latest = DataArray[-1]  
+timeStamp, temp, energy, command = latest[0], latest[1], latest[2], latest[3]
+
+ 
 val = st.session_state.counter * 10
 st.session_state.temp_data = pd.concat(
     [st.session_state.temp_data,
      pd.DataFrame([{
-         "time": now,
-         "actual_temp": val,
-         "pred_temp": val + np.random.normal(0, 2),
+         "time": timeStamp,
+         "actual_temp": temp,
      }])],
     ignore_index=True
 )
 st.session_state.energy_data = pd.concat(
     [st.session_state.energy_data,
      pd.DataFrame([{
-         "time": now,
-         "energy": val
+         "time": timeStamp,
+         "energy": energy,
      }])],
     ignore_index=True
 )
@@ -97,3 +102,4 @@ with energy_col:
 # Delay and rerun
 time.sleep(5)
 st.rerun()
+

@@ -7,11 +7,15 @@ import json
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import GradientBoostingRegressor
 #from HVACPublisher import publish_HVAC_command
-#from DataPublisher import publish_data_command
+from DataPublisher import publish_data_command
 
 topic_name = "room_1"
-room_data = '/Users/diya/SmartRoom/room_data/Room1.csv'
-room_output = '/Users/diya/SmartRoom/room1_output'
+
+room_data = '/Users/asad/SmartRoom/room1.csv'
+room_output = '/Users/asad/SmartRoom/room1_output'
+
+# room_data = '/Users/diya/SmartRoom/room_data/Room1.csv'
+# room_output = '/Users/asad/SmartRoom/room1_output'
 
 os.makedirs(room_output, exist_ok=True)
 # Memory of past N steps
@@ -39,9 +43,6 @@ energy_constants = {
         "cooling_capacity_kw": 10.0
     }
 }
-
-
-
 
 def apply_passive_drift(window, room_temp, drift_rate=0.1):
     if window.empty:
@@ -113,8 +114,6 @@ def calculate_energy_usage(hvac_command, prev_hvac_command,room_temp,setpoint,du
     else:
         raise ValueError("Unknown energy method")
     return base_energy + startup_energy
-
-
 
 def decide_command(room_temp, comfort_range):
     low, high = comfort_range
@@ -316,8 +315,8 @@ def linear_reg(df, duration_minutes, output_csv):
             room_temp = temp_result
             total_energy_kwh += best_energy
 
-            data = [str(current_time), float(room_temp)]  # convert explicitly if needed
-            #publish_data_command(command=json.dumps(data).encode('utf-8'), topic=topic_name)
+            data = [str(current_time), float(room_temp), float(total_energy_kwh), str(command)]  # convert explicitly if needed
+            publish_data_command(command=json.dumps(data).encode('utf-8'), topic=topic_name)
             #publish_HVAC_command(command=command.encode('utf-8'), topic=topic_name)
            
             output_rows.append({
