@@ -1,16 +1,24 @@
 # server.py
 from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
-from typing import List
 import asyncio
+from typing import List
+from threading import Thread
+import json
+from kafka import KafkaConsumer
 
 app = FastAPI()
 clients: List[WebSocket] = []
+main_loop = asyncio.get_event_loop()
 
-# Allow frontend on localhost
+
+# In-memory buffer
+shared_buffer = []
+buffer_lock = asyncio.Lock()
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], 
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -25,22 +33,40 @@ async def websocket_endpoint(websocket: WebSocket):
     except:
         clients.remove(websocket)
 
-# Simulated Pub/Sub message processor
-async def pubsub_listener():
-    import random, datetime, json
+# Kafka listener thread
+def kafka_listener():
+    consumer = KafkaConsumer(
+        'room_1', 'room_2',
+        bootstrap_servers='localhost:9092',
+        value_deserializer=lambda m: json.loads(m.decode('utf-8')),
+        auto_offset_reset='latest',
+        group_id='dashboard-group'
+    )
+    for msg in consumer:
+        print("Kafka message received:", msg.value)
+        asyncio.run_coroutine_threadsafe(buffer_data(msg.value), main_loop)
+
+# Add message to shared buffer
+async def buffer_data(data):
+    async with buffer_lock:
+        shared_buffer.append(data)
+        if len(shared_buffer) > 100:
+            shared_buffer.pop(0)
+
+# Push messages to connected WebSocket clients
+async def pubsub_forwarder():
     while True:
-        data = {
-            "room_id": "Room 1",
-            "timestamp": str(datetime.datetime.now()),
-            "actual_temp": round(random.uniform(21, 23), 2),
-            "predicted_temp": round(random.uniform(21, 23), 2),
-            "energy": round(random.uniform(0.1, 0.2), 2),
-            "hvac_command": random.choice(["Cooling", "Heating", "Off"]),
-        }
-        for ws in clients:
-            await ws.send_json(data)
-        await asyncio.sleep(2)
+        await asyncio.sleep(1)
+        async with buffer_lock:
+            if shared_buffer:
+                latest = shared_buffer[-1]
+                for ws in clients:
+                    try:
+                        await ws.send_json(latest)
+                    except:
+                        pass
 
 @app.on_event("startup")
-async def start_pubsub():
-    asyncio.create_task(pubsub_listener())
+async def startup_event():
+    Thread(target=kafka_listener, daemon=True).start()
+    asyncio.create_task(pubsub_forwarder())

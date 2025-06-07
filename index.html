@@ -1,54 +1,148 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html>
 <head>
   <title>HVAC Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    table {
+      border-collapse: collapse;
+      width: 95%;
+      margin: 20px auto;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background-color: #f0f0f0;
+    }
+    canvas {
+      max-width: 90%;
+      margin: 30px auto;
+      display: block;
+    }
+  </style>
 </head>
 <body>
-  <h2>Real-Time HVAC Room 1</h2>
+  <h2 style="text-align: center;">Real-Time HVAC Dashboard</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Timestamp</th>
+        <th>Room ID</th>
+        <th>Actual Temp (°C)</th>
+        <th>Predicted Temp (°C)</th>
+        <th>Energy (kWh)</th>
+        <th>HVAC Command</th>
+      </tr>
+    </thead>
+    <tbody id="dataTableBody"></tbody>
+  </table>
+
   <canvas id="tempChart"></canvas>
   <canvas id="energyChart"></canvas>
 
   <script>
     const ws = new WebSocket("ws://localhost:8000/ws");
-    const tempData = { labels: [], actual: [], predicted: [] };
-    const energyData = { labels: [], energy: [] };
 
-    const tempChart = new Chart(document.getElementById('tempChart'), {
+    // Table
+    const table = document.getElementById("dataTableBody");
+
+    // Chart Data
+    const maxPoints = 50;
+    const timeLabels = [];
+    const actualTemp = [];
+    const predictedTemp = [];
+    const energyUsage = [];
+
+    // Temperature Chart
+    const tempChart = new Chart(document.getElementById("tempChart"), {
       type: 'line',
       data: {
-        labels: tempData.labels,
+        labels: timeLabels,
         datasets: [
-          { label: 'Actual Temp', data: tempData.actual, borderColor: 'black', fill: false },
-          { label: 'Predicted Temp', data: tempData.predicted, borderColor: 'gray', borderDash: [5, 5], fill: false }
+          {
+            label: "Actual Temp (°C)",
+            data: actualTemp,
+            borderColor: "black",
+            fill: false
+          },
+          {
+            label: "Predicted Temp (°C)",
+            data: predictedTemp,
+            borderColor: "gray",
+            borderDash: [5, 5],
+            fill: false
+          }
         ]
+      },
+      options: {
+        plugins: { title: { display: true, text: 'Temperature vs Time' } },
+        scales: {
+          x: { title: { display: true, text: 'Time' } },
+          y: { title: { display: true, text: 'Temp (°C)' } }
+        }
       }
     });
 
-    const energyChart = new Chart(document.getElementById('energyChart'), {
+    // Energy Chart
+    const energyChart = new Chart(document.getElementById("energyChart"), {
       type: 'line',
       data: {
-        labels: energyData.labels,
+        labels: timeLabels,
         datasets: [
-          { label: 'Energy (kWh)', data: energyData.energy, borderColor: 'blue', fill: false }
+          {
+            label: "Energy (kWh)",
+            data: energyUsage,
+            borderColor: "blue",
+            fill: false
+          }
         ]
+      },
+      options: {
+        plugins: { title: { display: true, text: 'Energy Usage vs Time' } },
+        scales: {
+          x: { title: { display: true, text: 'Time' } },
+          y: { title: { display: true, text: 'Energy (kWh)' } }
+        }
       }
     });
 
     ws.onmessage = function(event) {
       const data = JSON.parse(event.data);
-      const time = new Date(data.timestamp).toLocaleTimeString();
+      const timeStr = new Date(data.timestamp).toLocaleTimeString();
 
-      // Update temp chart
-      tempData.labels.push(time);
-      tempData.actual.push(data.actual_temp);
-      tempData.predicted.push(data.predicted_temp);
+      // 1. Add to table
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${new Date(data.timestamp).toLocaleString()}</td>
+        <td>${data.room_id}</td>
+        <td>${data.actual_temp}</td>
+        <td>${data.predicted_temp}</td>
+        <td>${data.energy}</td>
+        <td>${data.hvac_command}</td>
+      `;
+      table.insertBefore(row, table.firstChild);
+      while (table.rows.length > 30) {
+        table.deleteRow(-1);
+      }
+
+      // 2. Update chart data
+      timeLabels.push(timeStr);
+      actualTemp.push(data.actual_temp);
+      predictedTemp.push(data.predicted_temp);
+      energyUsage.push(data.energy);
+
+      if (timeLabels.length > maxPoints) {
+        timeLabels.shift();
+        actualTemp.shift();
+        predictedTemp.shift();
+        energyUsage.shift();
+      }
+
       tempChart.update();
-
-      // Update energy chart
-      energyData.labels.push(time);
-      energyData.energy.push(data.energy);
       energyChart.update();
     };
   </script>
