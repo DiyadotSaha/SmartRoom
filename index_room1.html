@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>SmartRoom Dashboard – Room 1 (Dummy Data Demo)</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --accent: #005f73;
+      --accent-light: #0a9396;
+      --energy: #ee9b00;
+      --comfort-band: rgba(42,157,143,0.2);
+      --bg: #f0f2f5;
+      --card-bg: #e8f1f2;
+    }
+    body { font-family: "Segoe UI", Roboto, sans-serif; margin:0; padding:0; background:var(--bg); color:#333; }
+    header { display:flex; justify-content:space-between; align-items:center; padding:20px 40px; background:var(--accent); color:#fff; }
+    header h1 { margin:0; font-size:28px; font-weight:400; }
+    header select { padding:6px 10px; font-size:16px; border:none; border-radius:4px; }
+    main { display:flex; gap:24px; padding:24px 40px; }
+    section { background:var(--card-bg); border-radius:8px; padding:20px; flex:1; box-shadow:0 1px 6px rgba(0,0,0,0.1); }
+    section h2 { margin:0 0 12px; font-size:20px; color:var(--accent); }
+    canvas { max-height:250px; }
+    .metrics { display:flex; gap:16px; margin-top:16px; }
+    .metric { flex:1; background:white; padding:12px; text-align:center; border-radius:6px; border-left:4px solid var(--accent-light); box-shadow:0 1px 4px rgba(0,0,0,0.08); }
+    .metric .label { font-size:14px; color:#666; }
+    .metric .value { display:block; font-size:24px; margin-top:6px; color:var(--accent); }
+    .comfort-range { margin-top:24px; text-align:center; font-size:16px; color:#444; font-style:italic; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>SmartRoom Climate & Energy Monitor</h1>
+    <select id="roomSelect" onchange="location.href=this.value">
+      <option value="index_room1.html" selected>Room 1</option>
+      <option value="index_room2.html">Room 2</option>
+    </select>
+  </header>
+
+  <main>
+    <!-- Temperature Section -->
+    <section>
+      <h2>Room Temperature</h2>
+      <canvas id="tempChart"></canvas>
+      <div class="metrics">
+        <div class="metric">
+          <div class="label">Current Temperature</div>
+          <span id="curTemp" class="value">— °C</span>
+        </div>
+        <div class="metric">
+          <div class="label">HVAC State</div>
+          <span id="hvacState" class="value">—</span>
+        </div>
+      </div>
+      <div class="comfort-range">Comfort Range: 21 °C – 23 °C</div>
+    </section>
+
+    <!-- Energy Section -->
+    <section>
+      <h2>Energy Consumption</h2>
+      <canvas id="energyChart"></canvas>
+      <div class="metrics">
+        <div class="metric">
+          <div class="label">Total Energy Used</div>
+          <span id="totalEnergy" class="value">— kWh</span>
+        </div>
+        <div class="metric">
+          <div class="label">Average Power</div>
+          <span id="avgPower" class="value">— kW</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const MAX_POINTS = 30;
+    const UPDATE_INTERVAL_MS = 1000;      // 1 second per new point
+    let elapsed = [], temps = [], energies = [];
+    let idx = 0;
+
+    // Dummy data for Room 1
+    const dummyStream1 = [
+      [21.5,0.00,'Off'],
+      [22.0,0.00,'Off'],
+      [22.4,0.00,'Off'],
+      [23.1,0.02,'Cool'],
+      [22.6,0.04,'Cool'],
+      [22.0,0.06,'Cool'],
+      [21.7,0.07,'Off'],
+      [21.3,0.08,'Off']
+    ];
+
+    // Create charts
+    const tempCtx   = document.getElementById("tempChart").getContext("2d");
+    const energyCtx = document.getElementById("energyChart").getContext("2d");
+
+    const tempChart = new Chart(tempCtx, {
+      type: 'line',
+      data: {
+        labels: elapsed,
+        datasets: [{
+          data: temps,
+          borderColor: getComputedStyle(document.documentElement).getPropertyValue('--accent-light'),
+          borderWidth: 2,
+          pointRadius: 0,
+          fill: {
+            target: 'origin',
+            above: getComputedStyle(document.documentElement).getPropertyValue('--comfort-band')
+          }
+        }]
+      },
+      options: {
+        scales: {
+          x: {
+            title: { display: true, text: 'Elapsed Hours', color:'#555' },
+            ticks: { color: '#555' }
+          },
+          y: {
+            min: 18, max: 28,
+            title: { display: true, text: 'Temperature (°C)', color:'#555' },
+            ticks: { color: '#555' }
+          }
+        },
+        plugins: { legend: { display: false } }
+      }
+    });
+
+    const energyChart = new Chart(energyCtx, {
+      type: 'line',
+      data: {
+        labels: elapsed,
+        datasets: [{
+          data: energies,
+          borderColor: getComputedStyle(document.documentElement).getPropertyValue('--energy'),
+          borderWidth: 2,
+          pointRadius: 0,
+          fill: false
+        }]
+      },
+      options: {
+        scales: {
+          x: {
+            title: { display: true, text: 'Elapsed Hours', color:'#555' },
+            ticks: { color:'#555' }
+          },
+          y: {
+            title: { display: true, text: 'Energy (kWh)', color:'#555' },
+            ticks: { color:'#555' }
+          }
+        },
+        plugins: { legend: { display: false } }
+      }
+    });
+
+    function updateMetrics(temp, energy, command) {
+      document.getElementById("curTemp").textContent = temp.toFixed(1) + '°C';
+      const hvEl = document.getElementById("hvacState");
+      hvEl.textContent = command;
+      hvEl.style.color =
+        command === 'Cool' ? getComputedStyle(document.documentElement).getPropertyValue('--accent-light') :
+        command === 'Heat' ? getComputedStyle(document.documentElement).getPropertyValue('--energy') :
+        '#555';
+
+      const total = energies.reduce((a,b)=>a+b,0);
+      const avg   = energies.length ? (total/energies.length) * (1000/UPDATE_INTERVAL_MS) : 0;
+      document.getElementById("totalEnergy").textContent = total.toFixed(2) + ' kWh';
+      document.getElementById("avgPower").textContent   = avg.toFixed(2) + ' kW';
+    }
+
+    // Every second, push a new point
+    setInterval(() => {
+      // Calculate hours elapsed so far
+      const hours = (idx * UPDATE_INTERVAL_MS) / (1000 * 60 * 60);
+      elapsed.push(hours.toFixed(3));
+
+      // Grab dummy entry
+      const entry = dummyStream1[idx % dummyStream1.length];
+      temps.push(entry[0]);
+      energies.push(entry[1]);
+
+      // Trim if too many
+      if (elapsed.length > MAX_POINTS) {
+        elapsed.shift();
+        temps.shift();
+        energies.shift();
+      }
+
+      // Redraw
+      tempChart.update();
+      energyChart.update();
+      updateMetrics(entry[0], entry[1], entry[2]);
+
+      idx++;
+    }, UPDATE_INTERVAL_MS);
+  </script>
+</body>
+</html>
