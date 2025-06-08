@@ -7,25 +7,92 @@
   <style>
     :root {
       --accent-light: #0a9396;
-      --energy: #ee9b00;
-      --comfort-band: rgba(255,255,0,0.3);
-      --bg: #f0f2f5;
-      --card-bg: #e8f1f2;
+      --energy:       #ee9b00;
+      --comfort-band: rgba(255,255,0,0.3);  /* yellow */
+      --bg:           #f0f2f5;
+      --card-bg:      #e8f1f2;
     }
-    body { margin:0; padding:0; font-family:"Segoe UI",Roboto,sans-serif; background:var(--bg); }
-    header { display:flex; justify-content:space-between; align-items:center; padding:20px 40px; background:#005f73; color:#fff; }
-    header h1 { margin:0; font-size:24px; }
-    header select { padding:6px 10px; font-size:16px; border:none; border-radius:4px; }
-    main { display:flex; gap:24px; padding:24px 40px; }
-    section { background:var(--card-bg); border-radius:8px; padding:20px; flex:1; box-shadow:0 1px 6px rgba(0,0,0,0.1); }
-    h2 { margin:0 0 12px; color:#005f73; }
-    canvas { max-height:250px; }
-    .metrics { display:flex; gap:16px; margin-top:16px; }
-    .metric { flex:1; background:white; padding:12px; text-align:center; border-radius:6px; border-left:4px solid var(--accent-light); box-shadow:0 1px 4px rgba(0,0,0,0.08); }
-    .metric .label { font-size:14px; color:#1d1e1b; }
-    .metric .value { display:block; font-size:24px; margin-top:6px; color:var(--accent-light); }
-    .comfort-range { margin-top:24px; text-align:center; font-size:16px; color:#444; font-style:italic; }
-    #statusMsg { text-align:center; font-size:16px; font-weight:bold; margin:16px 0; }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: #333;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 40px;
+      background: #005f73;
+      color: #fff;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+    header select {
+      padding: 6px 10px;
+      font-size: 16px;
+      border: none;
+      border-radius: 4px;
+    }
+    main {
+      display: flex;
+      gap: 24px;
+      padding: 24px 40px;
+    }
+    section {
+      background: var(--card-bg);
+      border-radius: 8px;
+      padding: 20px;
+      flex: 1;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.1);
+    }
+    h2 {
+      margin: 0 0 12px;
+      color: #005f73;
+    }
+    canvas {
+      max-height: 250px;
+    }
+    .metrics {
+      display: flex;
+      gap: 16px;
+      margin-top: 16px;
+    }
+    .metric {
+      flex: 1;
+      background: white;
+      padding: 12px;
+      text-align: center;
+      border-radius: 6px;
+      border-left: 4px solid var(--accent-light);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .metric .label {
+      font-size: 14px;
+      color: #1d1e1b;
+    }
+    .metric .value {
+      display: block;
+      font-size: 24px;
+      margin-top: 6px;
+      color: var(--accent-light);
+    }
+    .comfort-range {
+      margin-top: 24px;
+      text-align: center;
+      font-size: 16px;
+      color: #444;
+      font-style: italic;
+    }
+    #statusMsg {
+      text-align: center;
+      font-size: 16px;
+      font-weight: bold;
+      margin: 16px 0;
+    }
   </style>
 </head>
 <body>
@@ -39,6 +106,7 @@
   </header>
 
   <main>
+    <!-- Temperature Section -->
     <section>
       <h2>Room Temperature</h2>
       <canvas id="tempChart"></canvas>
@@ -55,6 +123,7 @@
       <div class="comfort-range">Comfort Range: 20 °C – 22 °C</div>
     </section>
 
+    <!-- Energy Section -->
     <section>
       <h2>Energy Consumption</h2>
       <canvas id="energyChart"></canvas>
@@ -75,10 +144,10 @@
 
   <script>
     const COMFORT_MIN = 20, COMFORT_MAX = 22;
-    const MAX_POINTS = 30, INTERVAL_MS = 1000;
+    const MAX_POINTS  = 30, INTERVAL_MS = 1000;
 
-    // dummy stream [temp, energy, command]
-    const dummy = [
+    // Dummy data: [temperature, energy, HVAC command]
+    const dummyStream = [
       [21.0, 0.00, 'Off'],
       [21.5, 0.00, 'Off'],
       [22.1, 0.01, 'Heat'],
@@ -88,37 +157,53 @@
       [20.9, 0.05, 'Off']
     ];
 
-    let times = [], bandLow = [], bandHigh = [], temps = [], energies = [], cmds = [], idx = 0;
+    let times    = [];
+    let bandLow  = [];
+    let bandHigh = [];
+    let temps    = [];
+    let energies = [];
+    let cmds     = [];
+    let idx      = 0;
 
     const tCtx = document.getElementById('tempChart').getContext('2d');
     const eCtx = document.getElementById('energyChart').getContext('2d');
 
-    // Temperature chart: bandLow, bandHigh, temps
+    // Temperature chart with yellow comfort band
     const tempChart = new Chart(tCtx, {
       type: 'line',
       data: {
         labels: times,
         datasets: [
-          { data: bandLow, borderWidth: 0, fill: false, pointRadius: 0 },
+          // lower bound
+          {
+            data: bandLow,
+            borderWidth: 0,
+            fill: false,
+            pointRadius: 0
+          },
+          // upper bound + fill to lower
           {
             data: bandHigh,
             borderColor: 'transparent',
+            pointRadius: 0,
             fill: '-1',
-            backgroundColor: 'var(--comfort-band)',
-            pointRadius: 0
+            backgroundColor: getComputedStyle(document.documentElement)
+                               .getPropertyValue('--comfort-band')
           },
+          // actual temp
           {
             data: temps,
-            borderColor: 'var(--accent-light)',
+            borderColor: getComputedStyle(document.documentElement)
+                         .getPropertyValue('--accent-light'),
             borderWidth: 2,
-            fill: false,
-            pointRadius: 0
+            pointRadius: 0,
+            fill: false
           }
         ]
       },
       options: {
         scales: {
-          x: { display: false, title: { display: true, text: 'Hours Elapsed' } },
+          x: { display: false },
           y: { min: 18, max: 28, title: { display: true, text: '°C' } }
         },
         plugins: { legend: { display: false } }
@@ -132,15 +217,16 @@
         labels: times,
         datasets: [{
           data: energies,
-          borderColor: 'var(--energy)',
+          borderColor: getComputedStyle(document.documentElement)
+                         .getPropertyValue('--energy'),
           borderWidth: 2,
-          fill: false,
-          pointRadius: 0
+          pointRadius: 0,
+          fill: false
         }]
       },
       options: {
         scales: {
-          x: { display: false, title: { display: true, text: 'Hours Elapsed' } },
+          x: { display: false },
           y: { title: { display: true, text: 'kWh' } }
         },
         plugins: { legend: { display: false } }
@@ -148,45 +234,46 @@
     });
 
     function updateStatus(t, e, c) {
-      document.getElementById('curTemp').textContent = t.toFixed(1) + ' °C';
+      // update numeric panels
+      document.getElementById('curTemp').textContent    = t.toFixed(1) + ' °C';
       document.getElementById('totalEnergy').textContent = energies.reduce((a,b)=>a+b,0).toFixed(2) + ' kWh';
       const avg = energies.length
-        ? energies.reduce((a,b)=>a+b,0) / energies.length * (1000/INTERVAL_MS)
+        ? (energies.reduce((a,b)=>a+b,0) / energies.length) * (1000 / INTERVAL_MS)
         : 0;
       document.getElementById('avgPower').textContent = avg.toFixed(2) + ' kW';
 
+      // HVAC text color
       const hv = document.getElementById('hvacState');
       hv.textContent = c;
       hv.style.color = (c === 'Heat')
         ? getComputedStyle(document.documentElement).getPropertyValue('--energy')
         : getComputedStyle(document.documentElement).getPropertyValue('--accent-light');
 
+      // plain‐language status
       const status = document.getElementById('statusMsg');
       if (t < COMFORT_MIN) {
-        status.textContent = 'Warning: Room too cool (heating active).';
-        status.style.color = '#007BFF';
-      }
-      else if (t > COMFORT_MAX) {
-        status.textContent = 'Warning: Room too warm (cooling active).';
-        status.style.color = '#D9534F';
-      }
-      else {
+        status.textContent = 'Warning: too cool (heating active).';
+        status.style.color   = '#007BFF';
+      } else if (t > COMFORT_MAX) {
+        status.textContent = 'Warning: too warm (cooling active).';
+        status.style.color   = '#D9534F';
+      } else {
         status.textContent = 'Room is comfortable.';
-        status.style.color = '#28A745';
+        status.style.color   = '#28A745';
       }
     }
 
-    // Streaming simulation
+    // streaming simulation
     setInterval(() => {
-      const hrs = (idx * INTERVAL_MS) / (1000*60*60);
-      times.push(hrs.toFixed(3));
+      const hours = (idx * INTERVAL_MS) / (1000 * 60 * 60);
+      times.push(hours.toFixed(3));
       bandLow.push(COMFORT_MIN);
       bandHigh.push(COMFORT_MAX);
 
-      const [t,e,c] = dummy[idx % dummy.length];
-      temps.push(t);
-      energies.push(e);
-      cmds.push(c);
+      const [tVal, eVal, cVal] = dummyStream[idx % dummyStream.length];
+      temps.push(tVal);
+      energies.push(eVal);
+      cmds.push(cVal);
 
       if (times.length > MAX_POINTS) {
         times.shift();
@@ -199,7 +286,7 @@
 
       tempChart.update();
       energyChart.update();
-      updateStatus(t,e,c);
+      updateStatus(tVal, eVal, cVal);
       idx++;
     }, INTERVAL_MS);
   </script>
