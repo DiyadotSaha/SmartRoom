@@ -203,7 +203,18 @@
       },
       options: {
         scales: {
-          x: { display: false },
+          x: {
+              title: {
+                display: true,
+                text: 'Minutes Elapsed (min)'
+              }, 
+              ticks: {
+              stepSize: 1, // 1 minute intervals
+              callback: function (value) {
+                return value.toFixed(0); // Display as integers: 1, 2, 3...
+              }
+            }
+            },
           y: { min: 18, max: 28, title: { display: true, text: '°C' } }
         },
         plugins: { legend: { display: false } }

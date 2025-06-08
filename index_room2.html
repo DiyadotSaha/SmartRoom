@@ -20,7 +20,7 @@
     }
     header {
       display: flex; justify-content: space-between; align-items: center;
-      padding: 20px 40px; background: #005f73; color: #fff;
+      padding: 20px 40px; background: #6ad2f8; color: #fff;
     }
     header h1 { margin: 0; font-size: 24px; }
     header select {
@@ -84,7 +84,7 @@
       <div class="metrics">
         <div class="metric">
           <div class="label">Current Temperature</div>
-          <span id="curTemp" class="value">— °C</span>
+          <span id="curTemp" class="value"> Room Temperature (°C)</span>
         </div>
         <div class="metric">
           <div class="label">HVAC State</div>
@@ -101,7 +101,7 @@
       <div class="metrics">
         <div class="metric">
           <div class="label">Total Energy Used</div>
-          <span id="totalEnergy" class="value">— kWh</span>
+          <span id="totalEnergy" class="value">Cummulative Energy Consumption (kWh)</span>
         </div>
         <div class="metric">
           <div class="label">Average Power</div>
@@ -174,10 +174,20 @@
       },
       options: {
         scales: {
-          x: { display: false },
+          x: {
+            title: {
+              display: true,
+              text: 'Minutes Elapsed (Min)'
+            },
+            ticks: {
+              stepSize: 1, // 1 minute intervals
+              callback: function (value) {
+                return value.toFixed(0); // Display as integers: 1, 2, 3...
+              }
+            }},
           y: {
-            min: 24, max: 30,
-            title: { display: true, text: '°C' }
+            min: 18, max: 30,
+            title: { display: true, text: 'Temperature (°C)' }
           }
         },
         plugins: { legend: { display: false } }
@@ -199,9 +209,20 @@
       },
       options: {
         scales: {
-          x: { display: false },
+          x: {
+              title: {
+                display: true,
+                text: 'Minutes Elapsed (min)'
+              }, 
+              ticks: {
+              stepSize: 1, // 1 minute intervals
+              callback: function (value) {
+                return value.toFixed(0); // Display as integers: 1, 2, 3...
+              }
+            }
+            },
           y: {
-            title: { display: true, text: 'kWh' }
+            title: { display: true, text: 'Energy Consumption (kWh)' }
           }
         },
         plugins: { legend: { display: false } }
@@ -210,8 +231,8 @@
 
     function updateMetrics(temp, energy, cmd) {
       // numeric
-      document.getElementById('curTemp').textContent    = temp.toFixed(1) + ' °C';
-      document.getElementById('totalEnergy').textContent = energies.reduce((a,b)=>a+b,0).toFixed(2) + ' kWh';
+      document.getElementById('curTemp').textContent    = temp.toFixed(1) + 'Temperature (°C)';
+      document.getElementById('totalEnergy').textContent = energies.reduce((a,b)=>a+b,0).toFixed(2) + 'Energy (kWh)';
       const avg = energies.length
         ? (energies.reduce((a,b)=>a+b,0) / energies.length) * (1000/INTERVAL_MS)
         : 0;
@@ -243,8 +264,11 @@
     // main loop
     setInterval(() => {
       // hours elapsed
-      const hours = (idx * INTERVAL_MS) / (1000 * 60 * 60);
-      times.push(hours.toFixed(3));
+      const minutes = (idx * INTERVAL_MS) / (1000 * 60);
+      times.push(minutes);
+
+
+      //times.push(hours);
 
       // push comfort bounds
       bandLow.push(COMFORT_MIN);
