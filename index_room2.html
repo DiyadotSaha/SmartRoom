@@ -71,7 +71,7 @@
 <body>
 
   <header>
-    <h1>SmartRoom Climate & Energy Monitor</h1>
+    <h1>SmartRoom: Climate & Energy Monitor</h1>
     <select onchange="location.href=this.value">
       <option value="index_room1.html">Room 1</option>
       <option value="index_room2.html" selected>Room 2</option>
@@ -119,7 +119,7 @@
   <script>
     
     // WebSocket to FastAPI server
-    const ws = new WebSocket("ws://127.0.0.1:12345/ws");
+    const ws = new WebSocket("ws://127.0.0.1:12456/ws");
     ws.onopen = () => {
       console.log("WebSocket connected!");
     };
@@ -139,11 +139,9 @@
     bandLow = 26; 
     bandHigh = 28; 
 
-    // contexts
     const tCtx = document.getElementById('tempChart').getContext('2d');
     const eCtx = document.getElementById('energyChart').getContext('2d');
 
-    // temperature chart: dataset 0 = lower band, 1 = upper band fill, 2 = actual
     const tempChart = new Chart(tCtx, {
       type: 'line',
       data: {
@@ -177,7 +175,7 @@
             ticks: {
               stepSize: 1, // 1 minute intervals
               callback: function (value) {
-                return value.toFixed(0); // Display as integers: 1, 2, 3...
+                return value.toFixed(0); // Display as integers
               }
             }},
           y: {
@@ -193,7 +191,7 @@
                 type: 'box',
                 yMin: 26,
                 yMax: 28,
-                backgroundColor: 'rgba(255, 255, 0, 0.2)',  // light yellow
+                backgroundColor: 'rgba(255, 255, 0, 0.2)', 
                 borderWidth: 0
               }
             }
@@ -259,7 +257,7 @@
     ws.onmessage = evt => {
       const data = JSON.parse(evt.data);
 
-      if(data.roomID === "room_2"){
+      if(data.roomID === 'room_2_UI'){
 
         console.log("Data in UI ROOM 2: " , data)
         const ts = new Date(data.time).toLocaleTimeString();

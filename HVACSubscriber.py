@@ -8,8 +8,8 @@ def main():
     print("Creating the subscriber...")
 
     consumer = KafkaConsumer(
-        'room_1', 'room_2',
-        bootstrap_servers='localhost:9092',
+        'room_1_HVAC', 'room_2_HVAC',
+        bootstrap_servers='localhost:9093',
         auto_offset_reset='earliest',
         group_id='debug-group-1',
         enable_auto_commit=True
@@ -22,18 +22,18 @@ def main():
     for command in consumer:
         global message
 
+        print(f"Received from topic '{command.topic}': {command.value.decode()}")
+
         hvacCommand = command.value.decode()
         if(hvacCommand != message):
             if(hvacCommand == "off"):
-                print ("Turning HVAC off")
+                print (command.topic + ": Turning HVAC off")
             if(hvacCommand == "cooling"):
-                print("turning HVAC on (cooling)")
+                print(command.topic + ": Turning HVAC on (cooling)")
             if(hvacCommand == "heating"):
-                print("turning HVAC off (heating)")
+                print(command.topic + ": Turning HVAC off (heating)")
         
         message = hvacCommand; 
-        
-        print(f"Received from topic '{command.topic}': {command.value.decode()}")
 
 if __name__ == "__main__":
     main()

@@ -3,7 +3,7 @@ import pandas as pd
 
 from kafka import KafkaProducer
 
-producer = KafkaProducer(bootstrap_servers='localhost:9092')
+producer = KafkaProducer(bootstrap_servers='localhost:9093')
 
 def publish_HVAC_command(command, topic): 
     print("Got HVAC command: ", command, "from ", topic)

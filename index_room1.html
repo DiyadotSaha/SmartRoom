@@ -34,7 +34,7 @@
 <body>
 
   <header>
-    <h1>SmartRoom Climate & Energy Monitor</h1>
+    <h1>SmartRoom: Climate & Energy Monitor</h1>
     <select id="roomSelect" onchange="location.href=this.value">
       <option value="index_room1.html" selected>Room 1</option>
       <option value="index_room2.html">Room 2</option>
@@ -81,7 +81,7 @@
 
   <script>
     // WebSocket to FastAPI server
-    const ws = new WebSocket("ws://127.0.0.1:12345/ws");
+    const ws = new WebSocket("ws://127.0.0.1:12456/ws");
     ws.onopen = () => {
       console.log("WebSocket connected!");
     };
@@ -155,7 +155,6 @@
         }
       }
     });
-
     
     const energyCtx = document.getElementById("energyChart").getContext("2d");
     const energyChart = new Chart(energyCtx, {
@@ -204,9 +203,10 @@
     }
 
     ws.onmessage = evt => {
+
       const data = JSON.parse(evt.data);
 
-      if(data.roomID === "room_1"){
+      if(data.roomID === 'room_1_UI'){
 
         console.log("Data in UI ROOM 1: " , data)
         
