@@ -2,8 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>SmartRoom Dashboard – Room 1 (Dummy Data Demo)</title>
+  <title>SmartRoom Dashboard Room 1</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.4.0"></script>
+
   <style>
     :root {
       --accent: #005f73;
@@ -98,29 +101,58 @@
       data: {
         labels: timeLabels,
         datasets: [{
+          label: 'Temperature',
           data: temps,
           borderColor: getComputedStyle(document.documentElement).getPropertyValue('--accent-light'),
           borderWidth: 2,
           pointRadius: 0,
-          fill: {
-            target: 'origin',
-            above: getComputedStyle(document.documentElement).getPropertyValue('--comfort-band')
-          }
+        },
+        {
+        label: 'Comfort Range',
+        data: [],
+        backgroundColor: 'rgba(255, 255, 0, 0.2)',
+        borderWidth: 0,
+        fill: true
         }]
       },
       options: {
         scales: {
           x: {
-            title: { display: true, text: 'Elapsed Time (Hours)', color:'#555' },
-            ticks: { color: '#555' }
+          type: 'linear',  
+          min: 1,  // start at minute 1
+          title: {
+            display: true,
+            text: 'Elapsed Time (Minutes)',
+            color: '#555'
           },
+          ticks: {
+            stepSize: 1,
+            color: '#555',
+            callback: function(value) {
+              return value.toFixed(0); // Show whole numbers
+            }
+          }
+        },
           y: {
             min: 18, max: 28,
             title: { display: true, text: 'Temperature (°C)', color:'#555' },
             ticks: { color: '#555' }
           }
         },
-        plugins: { legend: { display: false } }
+        plugins: {
+          legend: { display: true },
+          annotation: {
+            annotations: {
+              comfortZone: {
+                type: 'box',
+                yMin: 21,
+                yMax: 23,
+                backgroundColor: 'rgba(255, 255, 0, 0.2)',  // light yellow
+                borderWidth: 0
+              }
+            }
+          }
+        }
       }
     });
 
@@ -173,17 +205,19 @@
 
     ws.onmessage = evt => {
       const data = JSON.parse(evt.data);
-      console.log("Data in UI: " , data)
-      const ts = new Date(data.time).toLocaleTimeString();
 
-      // push data
-      timeLabels.push(ts);
-      temps.push(+data.room_temp);
-      energies.push(+data.energy);
+      if(data.roomID === "room_1"){
 
-      tempChart.update();
-      energyChart.update();
-      updateMetrics(data.room_temp, data.energy, data.command);
+        console.log("Data in UI ROOM 1: " , data)
+        
+        timeLabels.push(timeLabels.length + 1);
+        temps.push(+data.room_temp);
+        energies.push(+data.energy);
+
+        tempChart.update();
+        energyChart.update();
+        updateMetrics(data.room_temp, data.energy, data.command);
+      }
     };
   </script>
 </body>

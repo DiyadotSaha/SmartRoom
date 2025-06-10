@@ -6,12 +6,16 @@ import numpy as np
 import json
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import GradientBoostingRegressor
-#from HVACPublisher import publish_HVAC_command
-#from DataPublisher import publish_data_command
+from HVACPublisher import publish_HVAC_command
+from DataPublisher import publish_data_command
 
 topic_name = "room_1"
-room_data = '/Users/diya/SmartRoom/room_data/Room1.csv'
-room_output = '/Users/diya/SmartRoom/room1_output'
+
+room_data = '/Users/asad/SmartRoom/room1.csv'
+room_output = '/Users/asad/SmartRoom/room1_output'
+
+# room_data = '/Users/diya/SmartRoom/room_data/Room1.csv'
+# room_output = '/Users/diya/SmartRoom/room1_output'
 
 os.makedirs(room_output, exist_ok=True)
 # Memory of past N steps
@@ -316,8 +320,8 @@ def linear_reg(df, duration_minutes, output_csv):
             room_temp = temp_result
             total_energy_kwh += best_energy
 
-            data = [str(current_time), float(room_temp)]  # convert explicitly if needed
-            #publish_data_command(command=json.dumps(data).encode('utf-8'), topic=topic_name)
+            data = [int(current_time), float(room_temp), float(total_energy_kwh), str(command)]  # convert explicitly if needed
+            publish_data_command(command=json.dumps(data).encode('utf-8'), topic=topic_name)
             #publish_HVAC_command(command=command.encode('utf-8'), topic=topic_name)
            
             output_rows.append({

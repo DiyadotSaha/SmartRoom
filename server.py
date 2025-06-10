@@ -48,12 +48,13 @@ def kafka_listener():
     )
     for msg in consumer:
         print("IN SERVER: Kafka message received:", msg.value)
-        asyncio.run_coroutine_threadsafe(buffer_data(msg.value), main_loop)
+        asyncio.run_coroutine_threadsafe(buffer_data(msg.topic, msg.value), main_loop)
 
 # Add message to shared buffer
-async def buffer_data(data):
+async def buffer_data(topic, data):
     async with buffer_lock:
         structured_data = {
+            "roomID": topic,
             "time": data[0],
             "room_temp": data[1],
             "energy": data[2],
