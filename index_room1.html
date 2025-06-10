@@ -11,57 +11,10 @@
     :root {
       --accent: #005f73;
       --accent-light: #0a9396;
-<<<<<<< HEAD
       --energy: #ee9b00;
       --comfort-band: rgba(42,157,143,0.2);
       --bg: #f0f2f5;
       --card-bg: #e8f1f2;
-=======
-      --energy:       #ee9b00;
-      --comfort-band: rgba(255,255,0,0.3);
-      --bg:           #f0f2f5;
-      --card-bg:      #e8f1f2;
-    }
-    body {
-      margin: 0; padding: 0;
-      font-family: "Segoe UI", Roboto, sans-serif;
-      background: var(--bg);
-      color: #333;
-    }
-    header {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 20px 40px; background: #005f73; color: #fff;
-    }
-    header h1 { margin:0; font-size:24px; }
-    header select {
-      padding:6px 10px; font-size:16px;
-      border:none; border-radius:4px;
-    }
-    main { display:flex; gap:24px; padding:24px 40px; }
-    section {
-      background:var(--card-bg); border-radius:8px;
-      padding:20px; flex:1;
-      box-shadow:0 1px 6px rgba(0,0,0,0.1);
-    }
-    h2 { margin:0 0 12px; color:#005f73; }
-    canvas { max-height:250px; }
-    .metrics { display:flex; gap:16px; margin-top:16px; }
-    .metric {
-      flex:1; background:white; padding:12px;
-      text-align:center; border-radius:6px;
-      border-left:4px solid var(--accent-light);
-      box-shadow:0 1px 4px rgba(0,0,0,0.08);
-    }
-    .metric .label { font-size:14px; color:#1d1e1b; }
-    .metric .value { font-size:24px; margin-top:6px; color:var(--accent-light); }
-    .comfort-range {
-      margin-top:24px; text-align:center;
-      font-size:16px; color:#444; font-style:italic;
-    }
-    #statusMsg {
-      text-align:center; font-size:16px;
-      font-weight:bold; margin:16px 0;
->>>>>>> c105755c1cf7faffe01b95b7f4dfcfaf9a092cba
     }
     body { font-family: "Segoe UI", Roboto, sans-serif; margin:0; padding:0; background:var(--bg); color:#333; }
     header { display:flex; justify-content:space-between; align-items:center; padding:20px 40px; background:var(--accent); color:#fff; }
@@ -127,7 +80,6 @@
   </main>
 
   <script>
-<<<<<<< HEAD
     // WebSocket to FastAPI server
     const ws = new WebSocket("ws://127.0.0.1:12456/ws");
     ws.onopen = () => {
@@ -162,62 +114,10 @@
         borderWidth: 0,
         fill: true
         }]
-=======
-    const COMFORT_MIN = 20, COMFORT_MAX = 22;
-    const MAX_POINTS  = 30;
-
-    // fire once per real minute
-    const INTERVAL_MS  = 60_000;  
-    // step = 1 minute
-    const MIN_PER_STEP = 1;       
-
-    // Dummy stream for demo
-    const dummyStream = [
-      [21.0, 0.00, 'Off'],
-      [21.5, 0.00, 'Off'],
-      [22.1, 0.01, 'Heat'],
-      [22.3, 0.02, 'Heat'],
-      [21.8, 0.03, 'Off'],
-      [21.4, 0.04, 'Off'],
-      [20.9, 0.05, 'Off']
-    ];
-
-    let times = [], bandLow = [], bandHigh = [];
-    let temps = [], energies = [], cmds = [];
-    let idx   = 0;
-
-    const tCtx = document.getElementById('tempChart').getContext('2d');
-    const eCtx = document.getElementById('energyChart').getContext('2d');
-
-    const tempChart = new Chart(tCtx, {
-      type: 'line',
-      data: {
-        labels: times,
-        datasets: [
-          { data: bandLow,  borderWidth: 0, fill: false, pointRadius: 0 },
-          {
-            data: bandHigh,
-            borderColor: 'transparent',
-            pointRadius: 0,
-            fill: '-1',
-            backgroundColor:
-              getComputedStyle(document.documentElement).getPropertyValue('--comfort-band')
-          },
-          {
-            data: temps,
-            borderColor:
-              getComputedStyle(document.documentElement).getPropertyValue('--accent-light'),
-            borderWidth: 2,
-            fill: false,
-            pointRadius: 0
-          }
-        ]
->>>>>>> c105755c1cf7faffe01b95b7f4dfcfaf9a092cba
       },
       options: {
         scales: {
           x: {
-<<<<<<< HEAD
           type: 'linear',  
           min: 1,  // start at minute 1
           title: {
@@ -258,43 +158,19 @@
     
     const energyCtx = document.getElementById("energyChart").getContext("2d");
     const energyChart = new Chart(energyCtx, {
-=======
-            title: { display: true, text: 'Minutes Elapsed' },
-            ticks: {
-              stepSize: 1,              // tick every 1 min
-              callback: v => v + ' min'
-            }
-          },
-          y: {
-            min: 18, max: 28,
-            title: { display: true, text: 'Temperature (°C)' }
-          }
-        },
-        plugins: { legend: { display: false } }
-      }
-    });
-
-    const energyChart = new Chart(eCtx, {
->>>>>>> c105755c1cf7faffe01b95b7f4dfcfaf9a092cba
       type: 'line',
       data: {
         labels: timeLabels,
         datasets: [{
           data: energies,
-<<<<<<< HEAD
           borderColor: getComputedStyle(document.documentElement).getPropertyValue('--energy'),
-=======
-          borderColor:
-            getComputedStyle(document.documentElement).getPropertyValue('--energy'),
->>>>>>> c105755c1cf7faffe01b95b7f4dfcfaf9a092cba
           borderWidth: 2,
-          fill: false,
-          pointRadius: 0
+          pointRadius: 0,
+          fill: false
         }]
       },
       options: {
         scales: {
-<<<<<<< HEAD
           x: {
             title: { display: true, text: 'Elapsed Time (Hours)', color:'#555' },
             ticks: { color:'#555' }
@@ -303,16 +179,11 @@
             title: { display: true, text: 'Energy (kWh)', color:'#555' },
             ticks: { color:'#555' }
           }
-=======
-          x: { display: false },
-          y: { title: { display: true, text: 'Energy (kWh)' } }
->>>>>>> c105755c1cf7faffe01b95b7f4dfcfaf9a092cba
         },
         plugins: { legend: { display: false } }
       }
     });
 
-<<<<<<< HEAD
     // Helper to update metrics
     function updateMetrics(temp, energy, command) {
       const t = parseFloat(temp);
@@ -332,49 +203,9 @@
     }
 
     ws.onmessage = evt => {
-=======
-    function updateStatus(temp, energy, cmd) {
-      document.getElementById('curTemp').textContent =
-        temp.toFixed(1) + ' °C';
-      document.getElementById('totalEnergy').textContent =
-        energies.reduce((a,b)=>a+b,0).toFixed(2) + ' kWh';
-
-      const avg = energies.length
-        ? (energies.reduce((a,b)=>a+b,0) / energies.length) * (1000/INTERVAL_MS)
-        : 0;
-      document.getElementById('avgPower').textContent =
-        avg.toFixed(2) + ' kW';
-
-      const hv = document.getElementById('hvacState');
-      hv.textContent = cmd;
-      hv.style.color = cmd === 'Heat'
-        ? getComputedStyle(document.documentElement).getPropertyValue('--energy')
-        : getComputedStyle(document.documentElement).getPropertyValue('--accent-light');
-
-      const status = document.getElementById('statusMsg');
-      if (temp < COMFORT_MIN) {
-        status.textContent = 'Warning: too cool (heating)…';
-        status.style.color = '#007BFF';
-      } else if (temp > COMFORT_MAX) {
-        status.textContent = 'Warning: too warm (cooling)…';
-        status.style.color = '#D9534F';
-      } else {
-        status.textContent = 'Room is comfortable.';
-        status.style.color = '#28A745';
-      }
-    }
-
-    // run once per minute
-    setInterval(() => {
-      const mins = idx * MIN_PER_STEP;
-      times.push(mins);
-      bandLow.push(COMFORT_MIN);
-      bandHigh.push(COMFORT_MAX);
->>>>>>> c105755c1cf7faffe01b95b7f4dfcfaf9a092cba
 
       const data = JSON.parse(evt.data);
 
-<<<<<<< HEAD
       if(data.roomID === 'room_1_UI'){
 
         console.log("Data in UI ROOM 1: " , data)
@@ -386,11 +217,6 @@
         tempChart.update();
         energyChart.update();
         updateMetrics(data.room_temp, data.energy, data.command);
-=======
-      if (times.length > MAX_POINTS) {
-        times.shift(); bandLow.shift(); bandHigh.shift();
-        temps.shift(); energies.shift(); cmds.shift();
->>>>>>> c105755c1cf7faffe01b95b7f4dfcfaf9a092cba
       }
     };
   </script>
