@@ -26,12 +26,16 @@ app.add_middleware(
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
+    print("WebSocket client connected")
     clients.append(websocket)
     try:
         while True:
             await asyncio.sleep(0.1)
-    except:
+    except Exception as e:
+        print("WebSocket error:", e)
+    finally:
         clients.remove(websocket)
+
 
 # Kafka listener thread
 def kafka_listener():
@@ -43,13 +47,19 @@ def kafka_listener():
         group_id='dashboard-group'
     )
     for msg in consumer:
-        print("Kafka message received:", msg.value)
+        print("IN SERVER: Kafka message received:", msg.value)
         asyncio.run_coroutine_threadsafe(buffer_data(msg.value), main_loop)
 
 # Add message to shared buffer
 async def buffer_data(data):
     async with buffer_lock:
-        shared_buffer.append(data)
+        structured_data = {
+            "time": data[0],
+            "room_temp": data[1],
+            "energy": data[2],
+            "command": data[3]
+        }
+        shared_buffer.append(structured_data)
         if len(shared_buffer) > 100:
             shared_buffer.pop(0)
 
@@ -59,9 +69,10 @@ async def pubsub_forwarder():
         await asyncio.sleep(1)
         async with buffer_lock:
             if shared_buffer:
-                latest = shared_buffer[-1]
+                latest = shared_buffer[-1]  # This is already a dict
                 for ws in clients:
                     try:
+                        print("IN SERVER Sending Latest: ", latest)
                         await ws.send_json(latest)
                     except:
                         pass

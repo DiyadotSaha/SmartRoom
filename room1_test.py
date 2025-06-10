@@ -315,7 +315,7 @@ def linear_reg(df, duration_minutes, output_csv):
             room_temp = temp_result
             total_energy_kwh += best_energy
 
-            data = [str(current_time), float(room_temp), float(total_energy_kwh), str(command)]  # convert explicitly if needed
+            data = [int(current_time), float(room_temp), float(total_energy_kwh), str(command)]  # convert explicitly if needed
             publish_data_command(command=json.dumps(data).encode('utf-8'), topic=topic_name)
             #publish_HVAC_command(command=command.encode('utf-8'), topic=topic_name)
            
@@ -339,7 +339,7 @@ def linear_reg(df, duration_minutes, output_csv):
         current_time += step_interval * 1000
         time.sleep(step_interval)
     pd.DataFrame(output_rows).to_csv(output_csv, index=False)
-    print(f"✅ Smart simulation complete. Output saved to {output_csv}")
+    print(f"Smart simulation complete. Output saved to {output_csv}")
 
 
 def main():
