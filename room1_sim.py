@@ -63,28 +63,6 @@ def decision_cost(discomfort: float, energy: float, alpha: float = 1.0, beta: fl
     return alpha * discomfort + beta * energy
 
 
-# def calculate_energy_usage(hvac_command, room_temp, setpoint, duration_sec=5, method="fixed", constants=None):
-#     if constants is None:
-#         constants = {}
-#     duration_hr = duration_sec / 3600
-#     if method == "fixed":
-#         if hvac_command == "cooling":
-#             return constants["cooling_power_kw"] * duration_hr
-#         elif hvac_command == "heating":
-#             return constants["heating_power_kw"] * duration_hr
-#         else:
-#             return 0.0
-#     elif method == "delta":
-#         diff = abs(room_temp - setpoint)
-#         return constants["K"] * diff * duration_hr if hvac_command != "off" else 0.0
-#     elif method == "cop":
-#         cop = constants.get("cop", 3.0)
-#         fan_power = constants.get("fan_power_kw", 1.0)
-#         cap = constants.get("cooling_capacity_kw", 10.0)
-#         load = max(room_temp - setpoint, 0) if hvac_command == "cooling" else max(setpoint - room_temp, 0)
-#         return ((load * cap / 5) / cop + fan_power) * duration_hr if hvac_command != "off" else 0.0
-#     raise ValueError("Unknown energy method")
-
 def calculate_energy_usage(hvac_command, prev_hvac_command,room_temp,setpoint,duration_sec=5,method="fixed",constants=None,startup_penalty_kw=2.0):
     if constants is None:
         constants = {}
